@@ -1,0 +1,24 @@
+body {
+	min-height: 100vh;
+	background: #385170;
+}
+h2 {
+	color: white;
+	font-size: 32px;
+}
+section {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+    section {
+        max-width: 70%;
+    }
+}
+
+@media (max-width: 768px) {
+    section {
+        max-width: 100%;
+    }
+}
