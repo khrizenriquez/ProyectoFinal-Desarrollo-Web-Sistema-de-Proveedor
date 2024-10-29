@@ -1,5 +1,4 @@
 # Maven package Java project Web App to Linux on Azure
-# Build your Java project and deploy it to Azure as a Linux web app
 
 trigger:
 - main
@@ -20,26 +19,25 @@ stages:
       vmImage: $(vmImageName)
 
     steps:
-    # Forzar uso de JDK 1.8 para compatibilidad
-    - task: UseJavaVersion@1
+    # Instalar Java JDK 1.8 usando JavaToolInstaller
+    - task: JavaToolInstaller@0
       inputs:
         versionSpec: '1.8'
-        jdkArchitecture: 'x64'
+        jdkArchitectureOption: 'x64'
 
     # Limpiar caché de Maven para evitar conflictos de versiones antiguas
     - script: |
         rm -rf ~/.m2/repository
       displayName: 'Clear Maven Cache'
 
-    # Ejecutar Maven con versión específica y en modo debug para más detalles
+    # Ejecutar Maven con la configuración adecuada
     - task: Maven@4
       displayName: 'Maven Package'
       inputs:
         mavenPomFile: 'pom.xml'
         mavenOptions: '-Xmx3072m'
-        javaHomeOption: 'JDKVersion'
-        jdkVersionOption: '1.8' 
-        jdkArchitectureOption: 'x64'
+        javaHomeOption: 'path'
+        jdkDirectory: $(JAVA_HOME_8_X64)  # Utiliza la ruta configurada por JavaToolInstaller
         publishJUnitResults: true
         testResultsFiles: '**/surefire-reports/TEST-*.xml'
         goals: 'clean package -X' # Ejecuta Maven en modo de depuración
