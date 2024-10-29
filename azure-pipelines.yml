@@ -7,12 +7,12 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-# Paso para instalar JDK 1.8 en el agente
+# Paso para instalar JDK 1.8 desde el almacenamiento de Azure si no está preinstalado
 - task: JavaToolInstaller@0
   inputs:
     versionSpec: '1.8'
     jdkArchitectureOption: 'x64'
-    jdkSourceOption: 'PreInstalled'  # Cambia a 'AzureStorage' si no funciona con PreInstalled
+    jdkSourceOption: 'AzureStorage'  # Descarga JDK desde Azure Storage si no está preinstalado
 
 # Limpiar caché de Maven (opcional)
 - script: |
@@ -31,7 +31,7 @@ steps:
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
 
-# Publicar artefactos (WAR/JAR) generados en la etapa de construcción
+# Copiar artefactos (WAR/JAR) generados en la etapa de construcción
 - task: CopyFiles@2
   displayName: 'Copy Files to artifact staging directory'
   inputs:
