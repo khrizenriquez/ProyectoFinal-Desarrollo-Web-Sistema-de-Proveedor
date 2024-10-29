@@ -1,0 +1,77 @@
+# Maven package Java project Web App to Linux on Azure
+# Build your Java project and deploy it to Azure as a Linux web app
+
+trigger:
+- main
+
+variables:
+  azureSubscription: '55ec3ebe-1f91-4356-9986-2b8f33632cf8'
+  webAppName: 'Proyecto-3-Desarrollo-Web-Sistema-Proveedor'
+  environmentName: 'Proyecto-3-Desarrollo-Web-Sistema-Proveedor'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build stage
+  jobs:
+  - job: MavenPackageAndPublishArtifacts
+    displayName: Maven Package and Publish Artifacts
+    pool:
+      vmImage: $(vmImageName)
+
+    steps:
+    # Forzar uso de JDK 1.8 para compatibilidad
+    - task: UseJavaVersion@1
+      inputs:
+        versionSpec: '1.8'
+        jdkArchitecture: 'x64'
+
+    # Limpiar caché de Maven para evitar conflictos de versiones antiguas
+    - script: |
+        rm -rf ~/.m2/repository
+      displayName: 'Clear Maven Cache'
+
+    # Ejecutar Maven con versión específica y en modo debug para más detalles
+    - task: Maven@4
+      displayName: 'Maven Package'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        mavenOptions: '-Xmx3072m'
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.8' 
+        jdkArchitectureOption: 'x64'
+        publishJUnitResults: true
+        testResultsFiles: '**/surefire-reports/TEST-*.xml'
+        goals: 'clean package -X' # Ejecuta Maven en modo de depuración
+
+    - task: CopyFiles@2
+      displayName: 'Copy Files to artifact staging directory'
+      inputs:
+        SourceFolder: '$(System.DefaultWorkingDirectory)'
+        Contents: '**/target/*.?(war|jar)'
+        TargetFolder: $(Build.ArtifactStagingDirectory)
+
+    - upload: $(Build.ArtifactStagingDirectory)
+      artifact: drop
+
+- stage: Deploy
+  displayName: Deploy stage
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployLinuxWebApp
+    displayName: Deploy Linux Web App
+    environment: $(environmentName)
+    pool:
+      vmImage: $(vmImageName)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Azure Web App Deploy: Proyecto-3-Desarrollo-Web-Sistema-Proveedor'
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appType: webAppLinux
+              appName: $(webAppName)
+              package: '$(Pipeline.Workspace)/drop/**/target/*.?(war|jar)'
