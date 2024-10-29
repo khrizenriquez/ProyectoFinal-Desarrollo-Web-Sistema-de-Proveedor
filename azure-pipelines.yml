@@ -1,51 +1,34 @@
-# Azure DevOps pipeline configuration for Java and Maven project
-
 trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: 'ubuntu-latest'
 
 steps:
-# Descargar y configurar Java 1.8 manualmente
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y openjdk-8-jdk
-    echo "##vso[task.setvariable variable=JAVA_HOME]$(dirname $(dirname $(readlink -f $(which javac))))"
-    echo "Java 1.8 instalado y configurado."
-  displayName: 'Instalar Java 1.8'
+- name: 'Set up JDK 11'
+  uses: actions/setup-java@v4
+  with:
+    java-version: '11'
+    distribution: 'microsoft'
+    java-package: 'jdk'
 
-# Verificar la versión de Java
-- script: |
-    java -version
-  displayName: 'Verificar Java Version'
-
-# Limpiar caché de Maven (opcional)
-- script: |
-    rm -rf ~/.m2/repository
-  displayName: 'Limpiar Caché de Maven'
-
-# Compilar y empaquetar el proyecto con Maven
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'Path'  # Usa el JAVA_HOME configurado
-    jdkDirectory: '$(JAVA_HOME)'  # Usa la variable configurada de JAVA_HOME
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '11'  # Asegúrate que coincida con la versión configurada arriba
+    jdkArchitectureOption: 'x64'
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'clean package'
+    goals: 'package'
 
-# Copiar artefactos (WAR/JAR) generados en la etapa de construcción
 - task: CopyFiles@2
-  displayName: 'Copiar archivos al directorio de artefactos'
+  displayName: 'Copy Files to artifact staging directory'
   inputs:
     SourceFolder: '$(System.DefaultWorkingDirectory)'
-    Contents: '**/target/*.war'
+    Contents: '**/target/*.?(war|jar)'
     TargetFolder: $(Build.ArtifactStagingDirectory)
 
-# Publicar los artefactos de la pipeline
-- task: PublishPipelineArtifact@1
-  inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)'
-    artifact: 'drop'
+- publish: $(Build.ArtifactStagingDirectory)
+  artifact: drop
