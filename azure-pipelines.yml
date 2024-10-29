@@ -10,13 +10,25 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+# Configurar JDK 1.8 utilizando AdoptOpenJDK
+- name: Set up JDK 1.8
+  uses: actions/setup-java@v2
+  with:
+    distribution: 'adopt'        # Utiliza AdoptOpenJDK que soporta Java 8
+    java-version: '8'
+
+# Limpiar caché de Maven (opcional pero recomendado)
+- script: |
+    rm -rf ~/.m2/repository
+  displayName: 'Clear Maven Cache'
+
+# Compilar el proyecto con Maven
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.11'
-    jdkArchitectureOption: 'x64'
+    javaHomeOption: 'path'       # Usa la versión de JAVA_HOME configurada en el paso anterior
+    jdkDirectory: $(JAVA_HOME)   # Establece JAVA_HOME desde setup-java
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'package'
