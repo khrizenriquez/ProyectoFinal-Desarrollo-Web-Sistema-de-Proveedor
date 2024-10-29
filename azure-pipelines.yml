@@ -1,23 +1,13 @@
 # Maven package Java project Web App to Linux on Azure
 # Build your Java project and deploy it to Azure as a Linux web app
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/java
 
 trigger:
 - main
 
 variables:
-
-  # Azure Resource Manager connection created during pipeline creation
   azureSubscription: '55ec3ebe-1f91-4356-9986-2b8f33632cf8'
-
-  # Web app name
   webAppName: 'Proyecto-3-Desarrollo-Web-Sistema-Proveedor'
-
-  # Environment name
   environmentName: 'Proyecto-3-Desarrollo-Web-Sistema-Proveedor'
-
-  # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
 stages:
@@ -30,17 +20,29 @@ stages:
       vmImage: $(vmImageName)
 
     steps:
+    # Forzar uso de JDK 1.8 para compatibilidad
+    - task: UseJavaVersion@1
+      inputs:
+        versionSpec: '1.8'
+        jdkArchitecture: 'x64'
+
+    # Limpiar caché de Maven para evitar conflictos de versiones antiguas
+    - script: |
+        rm -rf ~/.m2/repository
+      displayName: 'Clear Maven Cache'
+
+    # Ejecutar Maven con versión específica y en modo debug para más detalles
     - task: Maven@4
       displayName: 'Maven Package'
       inputs:
         mavenPomFile: 'pom.xml'
         mavenOptions: '-Xmx3072m'
         javaHomeOption: 'JDKVersion'
-        jdkVersionOption: '1.17' 
+        jdkVersionOption: '1.8' 
         jdkArchitectureOption: 'x64'
         publishJUnitResults: true
         testResultsFiles: '**/surefire-reports/TEST-*.xml'
-        goals: 'clean package'
+        goals: 'clean package -X' # Ejecuta Maven en modo de depuración
 
     - task: CopyFiles@2
       displayName: 'Copy Files to artifact staging directory'
