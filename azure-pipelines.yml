@@ -9,6 +9,7 @@ steps:
   inputs:
     versionSpec: '11'
     jdkArchitectureOption: 'x64'
+    jdkSourceOption: 'PreInstalled'  # Esto especifica que usaremos una versión JDK preinstalada
 
 - task: Maven@3
   inputs:
