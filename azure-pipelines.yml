@@ -7,37 +7,44 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-# Establecer la versión de Java 1.8 con UseJavaVersion
-- task: UseJavaVersion@1
-  inputs:
-    version: '1.8'
-    architecture: 'x64'
+# Descargar y configurar Java 1.8 manualmente
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y openjdk-8-jdk
+    echo "##vso[task.setvariable variable=JAVA_HOME]$(dirname $(dirname $(readlink -f $(which javac))))"
+    echo "Java 1.8 instalado y configurado."
+  displayName: 'Instalar Java 1.8'
+
+# Verificar la versión de Java
+- script: |
+    java -version
+  displayName: 'Verificar Java Version'
 
 # Limpiar caché de Maven (opcional)
 - script: |
     rm -rf ~/.m2/repository
-  displayName: 'Clear Maven Cache'
+  displayName: 'Limpiar Caché de Maven'
 
 # Compilar y empaquetar el proyecto con Maven
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.8'
-    jdkArchitectureOption: 'x64'
+    javaHomeOption: 'Path'  # Usa el JAVA_HOME configurado
+    jdkDirectory: '$(JAVA_HOME)'  # Usa la variable configurada de JAVA_HOME
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
     goals: 'clean package'
 
 # Copiar artefactos (WAR/JAR) generados en la etapa de construcción
 - task: CopyFiles@2
-  displayName: 'Copy Files to artifact staging directory'
+  displayName: 'Copiar archivos al directorio de artefactos'
   inputs:
     SourceFolder: '$(System.DefaultWorkingDirectory)'
     Contents: '**/target/*.war'
     TargetFolder: $(Build.ArtifactStagingDirectory)
 
+# Publicar los artefactos de la pipeline
 - task: PublishPipelineArtifact@1
   inputs:
     targetPath: '$(Build.ArtifactStagingDirectory)'
