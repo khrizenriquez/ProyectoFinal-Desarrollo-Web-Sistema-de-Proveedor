@@ -24,6 +24,7 @@ stages:
       inputs:
         versionSpec: '1.8'
         jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'PreInstalled'
 
     # Limpiar caché de Maven para evitar conflictos de versiones antiguas
     - script: |
