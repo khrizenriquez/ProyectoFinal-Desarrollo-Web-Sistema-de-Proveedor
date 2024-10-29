@@ -10,11 +10,11 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-# Configurar JDK 1.8 utilizando setup-java@v1 para AdoptOpenJDK
+# Configurar JDK 1.8 utilizando setup-java
 - task: UseJavaVersion@1
   inputs:
     versionSpec: '1.8'
-    jdkArchitecture: 'x64'
+    jdkArchitectureOption: 'x64'
 
 # Limpiar caché de Maven (opcional pero recomendado)
 - script: |
