@@ -1,7 +1,4 @@
-# Maven
-# Build your Java project and run tests with Apache Maven.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+# Azure DevOps pipeline configuration for Java and Maven project
 
 trigger:
 - main
@@ -10,24 +7,39 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
-# Configurar JDK 1.8 utilizando setup-java
-- task: UseJavaVersion@1
+# Paso para instalar JDK 1.8 en el agente
+- task: JavaToolInstaller@0
   inputs:
     versionSpec: '1.8'
     jdkArchitectureOption: 'x64'
+    jdkSourceOption: 'PreInstalled'  # Cambia a 'AzureStorage' si no funciona con PreInstalled
 
-# Limpiar caché de Maven (opcional pero recomendado)
+# Limpiar caché de Maven (opcional)
 - script: |
     rm -rf ~/.m2/repository
   displayName: 'Clear Maven Cache'
 
-# Compilar el proyecto con Maven
+# Compilar y empaquetar el proyecto con Maven
 - task: Maven@3
   inputs:
     mavenPomFile: 'pom.xml'
     mavenOptions: '-Xmx3072m'
-    javaHomeOption: 'path'       # Usa la versión de JAVA_HOME configurada en el paso anterior
-    jdkDirectory: $(JAVA_HOME)   # Establece JAVA_HOME desde UseJavaVersion
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
     publishJUnitResults: true
     testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    goals: 'package'
+    goals: 'clean package'
+
+# Publicar artefactos (WAR/JAR) generados en la etapa de construcción
+- task: CopyFiles@2
+  displayName: 'Copy Files to artifact staging directory'
+  inputs:
+    SourceFolder: '$(System.DefaultWorkingDirectory)'
+    Contents: '**/target/*.war'
+    TargetFolder: $(Build.ArtifactStagingDirectory)
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifact: 'drop'
